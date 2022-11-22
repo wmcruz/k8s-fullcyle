@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goserver
+  labels:
+    app: goserver
+spec:
+  selector: 
+    matchLabels:
+      app: goserver
+  replicas: 10
+  template:
+    metadata:
+      labels:
+        app: "goserver"
+    spec:
+      containers:
+        - name: goserver
+          image: "wmcruz/hello-go:latest"
+
+          # startupProbe é responsável por verificar a inicialização da aplicação, enquanto isso ela segura o readinessProbe e livenessProbe, para evitar loop de restarts. 
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 3
+            failureThreshold: 30
+
+          # readinessProbe serve para disponibilizar o container/pod apenas depois de um determinado tempo, funciona para que possamos esperar a aplicação iniciar antes de disponibilizar ela para o cliente.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 3
+            failureThreshold: 1
+            # initialDelaySeconds: 10
+
+          # livenessProbe serve para que o kubernets realize testes na aplicação(como por exemplo uma URL de healthz), e caso ele identifique algum problema, o pod será reinicializado automaticamente
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+            # initialDelaySeconds: 15
